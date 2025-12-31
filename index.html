@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>縦書きEPUB自動生成</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    <style>
+        body {
+            font-family: 'Hiragino Mincho Pro', 'MS PMincho', serif;
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        #status {
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>縦書きEPUB自動生成</h1>
+    <div id="status">処理中...</div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const statusDiv = document.getElementById('status');
+
+            try {
+                statusDiv.textContent = '日記データを取得中...';
+                const response = await fetch('https://nikki.poet.blue/entry.md');
+                if (!response.ok) throw new Error('日記データの取得に失敗');
+
+                const text = await response.text();
+                const diaryData = parseDiaryData(text);
+
+                statusDiv.textContent = 'EPUBを生成中...';
+                const epubBlob = await generateVerticalEpub(diaryData);
+
+                const url = URL.createObjectURL(epubBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'nikki.epub';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                statusDiv.textContent = 'EPUBファイルを自動ダウンロードしました。';
+            } catch (error) {
+                statusDiv.textContent = `エラー: ${error.message}`;
+            }
+        });
+
+        function parseDiaryData(text) {
+            const entries = text.split('---').filter(entry => entry.trim() !== '');
+            return entries.map(entry => {
+                const dateMatch = entry.match(/date:\s*(\d{8})/);
+                const contentMatch = entry.match(/content:\s*|\n([\s\S]*?)(?=\n---|\n$)/);
+                return {
+                    date: dateMatch ? formatDate(dateMatch[1]) : '不明',
+                    content: contentMatch ? contentMatch[1].trim() : ''
+                };
+            }).filter(entry => entry.content);
+        }
+
+        function formatDate(dateStr) {
+            const year = dateStr.substring(0, 4);
+            const month = dateStr.substring(4, 6);
+            const day = dateStr.substring(6, 8);
+            return `${year}年${month}月${day}日`;
+        }
+
+        async function generateVerticalEpub(entries) {
+            return new Promise((resolve) => {
+                const zip = new JSZip();
+
+                const content = `
+                    <?xml version="1.0" encoding="UTF-8"?>
+                    <!DOCTYPE html>
+                    <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+                    <head>
+                        <meta charset="UTF-8"/>
+                        <title>縦書き日記</title>
+                        <style>
+                            body {
+                                writing-mode: vertical-rl;
+                                text-orientation: mixed;
+                                font-family: 'Hiragino Mincho Pro', 'MS PMincho', serif;
+                                line-height: 2;
+                                font-size: 16px;
+                                padding: 2em;
+                            }
+                            .entry {
+                                margin-bottom: 2em;
+                                page-break-after: always;
+                            }
+                            .date {
+                                font-weight: bold;
+                                margin-bottom: 0.5em;
+                                font-size: 1.2em;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        ${entries.map(entry =>
+                            `<div class="entry"><div class="date">${entry.date}</div><div class="content">${entry.content.replace(/\n/g, '<br>')}</div></div>`
+                        ).join('')}
+                    </body>
+                    </html>
+                `;
+
+                zip.file('OEBPS/content.xhtml', content);
+                zip.file('mimetype', 'application/epub+zip');
+                zip.file('META-INF/container.xml', `
+                    <?xml version="1.0"?>
+                    <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+                        <rootfiles>
+                            <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+                        </rootfiles>
+                    </container>
+                `);
+                zip.file('OEBPS/content.opf', `
+                    <?xml version="1.0" encoding="UTF-8"?>
+                    <package version="3.0" xmlns="http://www.idpf.org/2007/opf" unique-identifier="bookid">
+                        <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                            <dc:identifier id="bookid">urn:uuid:${self.crypto.randomUUID()}</dc:identifier>
+                            <dc:title>縦書き日記</dc:title>
+                            <dc:language>ja</dc:language>
+                            <dc:date>${new Date().toISOString()}</dc:date>
+                        </metadata>
+                        <manifest>
+                            <item id="content" href="content.xhtml" media-type="application/xhtml+xml" properties="svg"/>
+                        </manifest>
+                        <spine>
+                            <itemref idref="content"/>
+                        </spine>
+                    </package>
+                `);
+
+                zip.generateAsync({ type: 'blob' }).then(resolve);
+            });
+        }
+    </script>
+</body>
+</html>
