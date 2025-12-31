@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>縦書きEPUB自動生成</title>
+    <title>誤字ロマの日記 - 縦書きEPUB自動生成</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
     <style>
         body {
@@ -12,20 +12,63 @@
             padding: 20px;
             max-width: 800px;
             margin: 0 auto;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+        }
+        .container {
+            text-align: center;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        p {
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        .qrcode {
+            margin: 20px auto;
+            width: 200px;
+            height: 200px;
+        }
+        .qrcode img {
+            width: 100%;
+            height: 100%;
         }
         #status {
             font-size: 14px;
             color: #666;
+            margin-top: 20px;
         }
     </style>
 </head>
 <body>
-    <h1>縦書きEPUB自動生成</h1>
-    <div id="status">処理中...</div>
+    <div class="container">
+        <h1>誤字ロマの日記</h1>
+        <p>このサイトは「誤字ロマの日記」を縦書きEPUBとしてダウンロードするためのもの。Kindleのブラウザから直接アクセスして、ダウンロードできる。</p>
+        <div class="qrcode">
+            <img src="https://idy.vercel.app/q/{{location.href}}" alt="QRコード">
+        </div>
+        <div id="status">処理中...</div>
+    </div>
 
     <script>
+        // UUID v4生成関数
+        function uuidv4() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', async () => {
             const statusDiv = document.getElementById('status');
+            const pastelColors = [
+                '#FFD1DC', '#FFE4E1', '#E6E6FA', '#D8BFD8', '#FFDAB9',
+                '#B0E0E6', '#ADD8E6', '#F0E68C', '#98FB98', '#E0FFFF'
+            ];
+            document.body.style.backgroundColor = pastelColors[Math.floor(Math.random() * pastelColors.length)];
 
             try {
                 statusDiv.textContent = '日記データを取得中...';
@@ -41,7 +84,7 @@
                 const url = URL.createObjectURL(epubBlob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = 'nikki.epub';
+                a.download = 'goji_nikki.epub';
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
@@ -82,7 +125,7 @@
                     <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
                     <head>
                         <meta charset="UTF-8"/>
-                        <title>縦書き日記</title>
+                        <title>誤字ロマの日記</title>
                         <style>
                             body {
                                 writing-mode: vertical-rl;
@@ -125,8 +168,8 @@
                     <?xml version="1.0" encoding="UTF-8"?>
                     <package version="3.0" xmlns="http://www.idpf.org/2007/opf" unique-identifier="bookid">
                         <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
-                            <dc:identifier id="bookid">urn:uuid:${self.crypto.randomUUID()}</dc:identifier>
-                            <dc:title>縦書き日記</dc:title>
+                            <dc:identifier id="bookid">urn:uuid:${uuidv4()}</dc:identifier>
+                            <dc:title>誤字ロマの日記</dc:title>
                             <dc:language>ja</dc:language>
                             <dc:date>${new Date().toISOString()}</dc:date>
                         </metadata>
