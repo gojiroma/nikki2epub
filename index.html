@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
+
     <title>誤字ロマの日記 - EPUBを入手</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
     <style>
@@ -284,7 +284,6 @@
     </div>
 
     <script>
-        // 桜の花びらアニメーション
         function createSakura() {
             const container = document.getElementById('sakura-container');
             const sakura = document.createElement('div');
@@ -305,27 +304,12 @@
             setTimeout(createSakura, i * 200);
         }
 
-        // UUID生成
         function uuidv4() {
             return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
                 const r = Math.random() * 16 | 0;
                 const v = c === 'x' ? r : (r & 0x3 | 0x8);
                 return v.toString(16);
             });
-        }
-
-        // 日付を漢数字に変換
-        function formatDateToKanji(dateStr) {
-            const year = dateStr.substring(0, 4);
-            const month = dateStr.substring(4, 6);
-            const day = dateStr.substring(6, 8);
-
-            const kanjiNumbers = ['〇', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
-            const kanjiYear = year.split('').map(d => kanjiNumbers[parseInt(d)]).join('');
-            const kanjiMonth = kanjiNumbers[parseInt(month.substring(0, 1))] + (month.substring(1, 2) !== '0' ? kanjiNumbers[parseInt(month.substring(1, 2))] : '');
-            const kanjiDay = kanjiNumbers[parseInt(day.substring(0, 1))] + (day.substring(1, 2) !== '0' ? kanjiNumbers[parseInt(day.substring(1, 2))] : '');
-
-            return `${kanjiYear}年${kanjiMonth}月${kanjiDay}日`;
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
@@ -343,10 +327,12 @@
 
                 const startDate = diaryData[0].date.replace(/[年月日]/g, '');
                 const endDate = diaryData[diaryData.length - 1].date.replace(/[年月日]/g, '');
+                const formattedStartDate = startDate.replace(/(\d{4})(\d{2})(\d{2})/, '$1$2$3');
+                const formattedEndDate = endDate.replace(/(\d{4})(\d{2})(\d{2})/, '$1$2$3');
                 const url = URL.createObjectURL(epubBlob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `誤字ロマの日記_${startDate}-${endDate}.epub`;
+                a.download = `誤字ロマの日記_${formattedStartDate}-${formattedEndDate}.epub`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
@@ -364,8 +350,10 @@
                 const dateMatch = entry.match(/date:\s*(\d{8})/);
                 const contentMatch = entry.match(/content:\s*\|?\n([\s\S]*?)(?=\n---|\n$)/);
                 const dateStr = dateMatch ? dateMatch[1] : '';
+                const formattedDate = dateStr.replace(/(\d{4})(\d{2})(\d{2})/, '$1年$2月$3日');
                 return {
-                    date: dateMatch ? formatDateToKanji(dateMatch[1]) : '不明',
+                    date: dateMatch ? formattedDate : '不明',
+                    originalDate: dateStr,
                     content: contentMatch ? contentMatch[1].trim().replace(/^date: \d{8}\ncontent: \|?\s*/, '') : ''
                 };
             }).filter(entry => entry.content);
@@ -374,8 +362,8 @@
         async function generateVerticalEpub(entries) {
             return new Promise((resolve) => {
                 const zip = new JSZip();
-                const startDate = entries[0].date.replace(/[年月日]/g, '');
-                const endDate = entries[entries.length - 1].date.replace(/[年月日]/g, '');
+                const startDate = entries[0].originalDate.replace(/(\d{4})(\d{2})(\d{2})/, '$1$2$3');
+                const endDate = entries[entries.length - 1].originalDate.replace(/(\d{4})(\d{2})(\d{2})/, '$1$2$3');
 
                 const content = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
