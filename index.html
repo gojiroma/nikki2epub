@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
     <title>誤字ロマの日記 - EPUBを入手</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
     <style>
@@ -28,7 +29,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-image: 
+            background-image:
                 radial-gradient(circle at 20% 80%, rgba(255, 182, 193, 0.15) 0%, transparent 50%),
                 radial-gradient(circle at 80% 20%, rgba(255, 192, 203, 0.15) 0%, transparent 50%),
                 radial-gradient(circle at 40% 40%, rgba(255, 218, 224, 0.1) 0%, transparent 50%);
@@ -81,7 +82,7 @@
             backdrop-filter: blur(20px);
             border-radius: 30px;
             padding: 50px 40px;
-            box-shadow: 
+            box-shadow:
                 0 20px 60px rgba(255, 182, 193, 0.3),
                 0 0 0 1px rgba(255, 255, 255, 0.5) inset;
             position: relative;
@@ -240,7 +241,7 @@
             .card {
                 padding: 40px 30px;
             }
-            
+
             h1 {
                 font-size: 26px;
             }
@@ -259,24 +260,24 @@
 </head>
 <body>
     <div class="sakura-container" id="sakura-container"></div>
-    
+
     <div class="container">
         <div class="card">
             <div class="decoration">🌸</div>
             <div class="decoration">🌸</div>
             <div class="decoration">🌸</div>
             <div class="decoration">🌸</div>
-            
+
             <h1>誤字ロマの日記</h1>
             <p class="subtitle">縦書きEPUBでお楽しみください</p>
-            
+
             <div class="qrcode-wrapper">
                 <div class="qrcode-bg"></div>
                 <div class="qrcode">
                     <img src="https://idy.vercel.app/q/{{location.href}}" alt="QRコード">
                 </div>
             </div>
-            
+
             <div id="status">処理中...</div>
             <a id="send-to-kindle" href="https://www.amazon.co.jp/sendtokindle/" target="_blank">📚 Send to Kindle</a>
         </div>
@@ -311,6 +312,20 @@
                 const v = c === 'x' ? r : (r & 0x3 | 0x8);
                 return v.toString(16);
             });
+        }
+
+        // 日付を漢数字に変換
+        function formatDateToKanji(dateStr) {
+            const year = dateStr.substring(0, 4);
+            const month = dateStr.substring(4, 6);
+            const day = dateStr.substring(6, 8);
+
+            const kanjiNumbers = ['〇', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
+            const kanjiYear = year.split('').map(d => kanjiNumbers[parseInt(d)]).join('');
+            const kanjiMonth = kanjiNumbers[parseInt(month.substring(0, 1))] + (month.substring(1, 2) !== '0' ? kanjiNumbers[parseInt(month.substring(1, 2))] : '');
+            const kanjiDay = kanjiNumbers[parseInt(day.substring(0, 1))] + (day.substring(1, 2) !== '0' ? kanjiNumbers[parseInt(day.substring(1, 2))] : '');
+
+            return `${kanjiYear}年${kanjiMonth}月${kanjiDay}日`;
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
@@ -354,19 +369,6 @@
                     content: contentMatch ? contentMatch[1].trim().replace(/^date: \d{8}\ncontent: \|?\s*/, '') : ''
                 };
             }).filter(entry => entry.content);
-        }
-
-        function formatDateToKanji(dateStr) {
-            const year = dateStr.substring(0, 4);
-            const month = dateStr.substring(4, 6);
-            const day = dateStr.substring(6, 8);
-
-            const kanjiNumbers = ['〇', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
-            const kanjiYear = year.split('').map(d => kanjiNumbers[parseInt(d)]).join('');
-            const kanjiMonth = kanjiNumbers[parseInt(month.substring(0, 1))] + (month.substring(1, 2) !== '0' ? kanjiNumbers[parseInt(month.substring(1, 2))] : '');
-            const kanjiDay = kanjiNumbers[parseInt(day.substring(0, 1))] + (day.substring(1, 2) !== '0' ? kanjiNumbers[parseInt(day.substring(1, 2))] : '');
-
-            return `${kanjiYear}年${kanjiMonth}月${kanjiDay}日`;
         }
 
         async function generateVerticalEpub(entries) {
