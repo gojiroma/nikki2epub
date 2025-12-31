@@ -82,10 +82,12 @@
                 statusDiv.textContent = 'EPUBを生成中...';
                 const epubBlob = await generateVerticalEpub(diaryData);
 
+                const startDate = diaryData[0].date.replace(/[年月日]/g, '');
+                const endDate = diaryData[iaryData.length - 1].date.replace(/[年月日]/g, '');
                 const url = URL.createObjectURL(epubBlob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `goji_nikki_${diaryData[0].date.replace(/[年月日]/g, '')}_${diaryData[diaryData.length - 1].date.replace(/[年月日]/g, '')}.epub`;
+                a.download = `goji_nikki_${startDate}-${endDate}.epub`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
