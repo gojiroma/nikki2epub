@@ -3,17 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>誤字ロマの日記 - 縦書きEPUB自動生成</title>
+    <title>誤字ロマの日記 - EPUBを入手</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
     <style>
         body {
-            font-family: 'Hiragino Mincho Pro', 'MS PMincho', serif;
+            font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'MS PGothic', sans-serif;
             line-height: 1.6;
             padding: 20px;
             max-width: 800px;
             margin: 0 auto;
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
+            writing-mode: horizontal-tb;
+            text-orientation: initial;
+            background-color: white;
         }
         .container {
             text-align: center;
@@ -40,20 +41,26 @@
             color: #666;
             margin-top: 20px;
         }
+        #send-to-kindle {
+            display: block;
+            margin-top: 10px;
+            color: #0066c0;
+            text-decoration: none;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>誤字ロマの日記</h1>
-        <p>このサイトは「誤字ロマの日記」を縦書きEPUBとしてダウンロードするためのもの。Kindleのブラウザから直接アクセスして、ダウンロードできる。</p>
+        <p>このサイトは「誤字ロマの日記」を縦書きEPUBとしてダウンロードするためのもの。</p>
         <div class="qrcode">
             <img src="https://idy.vercel.app/q/{{location.href}}" alt="QRコード">
         </div>
         <div id="status">処理中...</div>
+        <a id="send-to-kindle" href="https://www.amazon.co.jp/sendtokindle/" target="_blank">Send to Kindle</a>
     </div>
 
     <script>
-        // UUID v4生成関数
         function uuidv4() {
             return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
                 const r = Math.random() * 16 | 0;
@@ -64,12 +71,6 @@
 
         document.addEventListener('DOMContentLoaded', async () => {
             const statusDiv = document.getElementById('status');
-            const pastelColors = [
-                '#FFD1DC', '#FFE4E1', '#E6E6FA', '#D8BFD8', '#FFDAB9',
-                '#B0E0E6', '#ADD8E6', '#F0E68C', '#98FB98', '#E0FFFF'
-            ];
-            document.body.style.backgroundColor = pastelColors[Math.floor(Math.random() * pastelColors.length)];
-
             try {
                 statusDiv.textContent = '日記データを取得中...';
                 const response = await fetch('https://nikki.poet.blue/entry.md');
@@ -84,7 +85,7 @@
                 const url = URL.createObjectURL(epubBlob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = 'goji_nikki.epub';
+                a.download = `goji_nikki_${diaryData[0].date.replace(/[年月日]/g, '')}_${diaryData[diaryData.length - 1].date.replace(/[年月日]/g, '')}.epub`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
@@ -101,23 +102,32 @@
             return entries.map(entry => {
                 const dateMatch = entry.match(/date:\s*(\d{8})/);
                 const contentMatch = entry.match(/content:\s*|\n([\s\S]*?)(?=\n---|\n$)/);
+                const dateStr = dateMatch ? dateMatch[1] : '';
                 return {
-                    date: dateMatch ? formatDate(dateMatch[1]) : '不明',
-                    content: contentMatch ? contentMatch[1].trim() : ''
+                    date: dateMatch ? formatDateToKanji(dateMatch[1]) : '不明',
+                    content: contentMatch ? contentMatch[1].trim().replace(/^date: \d{8}\ncontent: \|?\s*/, '') : ''
                 };
             }).filter(entry => entry.content);
         }
 
-        function formatDate(dateStr) {
+        function formatDateToKanji(dateStr) {
             const year = dateStr.substring(0, 4);
             const month = dateStr.substring(4, 6);
             const day = dateStr.substring(6, 8);
-            return `${year}年${month}月${day}日`;
+
+            const kanjiNumbers = ['〇', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
+            const kanjiYear = year.split('').map(d => kanjiNumbers[parseInt(d)]).join('');
+            const kanjiMonth = kanjiNumbers[parseInt(month.substring(0, 1))] + (month.substring(1, 2) !== '0' ? kanjiNumbers[parseInt(month.substring(1, 2))] : '');
+            const kanjiDay = kanjiNumbers[parseInt(day.substring(0, 1))] + (day.substring(1, 2) !== '0' ? kanjiNumbers[parseInt(day.substring(1, 2))] : '');
+
+            return `${kanjiYear}年${kanjiMonth}月${kanjiDay}日`;
         }
 
         async function generateVerticalEpub(entries) {
             return new Promise((resolve) => {
                 const zip = new JSZip();
+                const startDate = entries[0].date.replace(/[年月日]/g, '');
+                const endDate = entries[entries.length - 1].date.replace(/[年月日]/g, '');
 
                 const content = `
                     <?xml version="1.0" encoding="UTF-8"?>
@@ -125,7 +135,7 @@
                     <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
                     <head>
                         <meta charset="UTF-8"/>
-                        <title>誤字ロマの日記</title>
+                        <title>誤字ロマの日記 ${startDate}-${endDate}</title>
                         <style>
                             body {
                                 writing-mode: vertical-rl;
@@ -169,7 +179,8 @@
                     <package version="3.0" xmlns="http://www.idpf.org/2007/opf" unique-identifier="bookid">
                         <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
                             <dc:identifier id="bookid">urn:uuid:${uuidv4()}</dc:identifier>
-                            <dc:title>誤字ロマの日記</dc:title>
+                            <dc:title>誤字ロマの日記 ${startDate}-${endDate}</dc:title>
+                            <dc:creator>誤字ロマ</dc:creator>
                             <dc:language>ja</dc:language>
                             <dc:date>${new Date().toISOString()}</dc:date>
                         </metadata>
